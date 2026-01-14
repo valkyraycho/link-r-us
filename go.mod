@@ -3,6 +3,7 @@ module github.com/valkyraycho/links-r-us
 go 1.25.5
 
 require (
+	github.com/blevesearch/bleve/v2 v2.5.7
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
@@ -11,7 +12,6 @@ require (
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.14.4 // indirect
 	github.com/bits-and-blooms/bitset v1.24.4 // indirect
-	github.com/blevesearch/bleve/v2 v2.5.7 // indirect
 	github.com/blevesearch/bleve_index_api v1.3.0 // indirect
 	github.com/blevesearch/geo v0.2.4 // indirect
 	github.com/blevesearch/go-faiss v1.0.27 // indirect
