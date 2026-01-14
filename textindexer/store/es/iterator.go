@@ -1,7 +1,7 @@
 package es
 
 import (
-	"github.com/elastic/go-elasticsearch"
+	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/valkyraycho/links-r-us/textindexer/index"
 )
 

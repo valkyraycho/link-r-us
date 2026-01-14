@@ -13,7 +13,7 @@ import (
 var (
 	upsertLinkQuery = `
 INSERT INTO links (url, retrieved_at) VALUES ($1, $2)
-ON CONFLICT (url) DO UPDATE SET retrieved_at=GREATEST(retrieved_at, $2)
+ON CONFLICT (url) DO UPDATE SET retrieved_at=GREATEST(links.retrieved_at, $2)
 RETURNING id, retrieved_at
 `
 	findLinkQuery = `
@@ -24,7 +24,7 @@ SELECT id, url, retrieved_at FROM links WHERE id >= $1 AND id < $2 AND retrieved
 `
 	upsertEdgeQuery = `
 INSERT INTO edges (src, dst, updated_at) VALUES ($1, $2, NOW())
-ON CONFLICT (src, dst) DO UPDATE SET updated_at=NOW()
+ON CONFLICT (src,dst) DO UPDATE SET updated_at=NOW()
 RETURNING id, updated_at
 `
 	edgesInPartitionQuery = `
@@ -57,7 +57,7 @@ func (c *CockroachDBGraph) UpsertLink(link *graph.Link) error {
 
 func (c *CockroachDBGraph) UpsertEdge(edge *graph.Edge) error {
 	row := c.db.QueryRow(upsertEdgeQuery, edge.Src, edge.Dst)
-	if err := row.Scan(); err != nil {
+	if err := row.Scan(&edge.ID, &edge.UpdatedAt); err != nil {
 		if isForeignKeyViolationError(err) {
 			err = graph.ErrUnknownEdgeLinks
 		}

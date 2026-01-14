@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch"
-	"github.com/elastic/go-elasticsearch/esapi"
+	"github.com/elastic/go-elasticsearch/v9"
+	"github.com/elastic/go-elasticsearch/v9/esapi"
 	"github.com/google/uuid"
 	"github.com/valkyraycho/links-r-us/textindexer/index"
 )
@@ -85,6 +86,8 @@ type ElasticSearchIndexer struct {
 func NewElasticSearchIndexer(esNodes []string, syncUpdates bool) (*ElasticSearchIndexer, error) {
 	cfg := elasticsearch.Config{
 		Addresses: esNodes,
+		Username:  os.Getenv("ES_USERNAME"),
+		Password:  os.Getenv("ES_PASSWORD"),
 	}
 
 	es, err := elasticsearch.NewClient(cfg)
