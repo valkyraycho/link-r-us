@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/blevesearch/bleve/v2 v2.5.7
+	github.com/elastic/go-elasticsearch v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
