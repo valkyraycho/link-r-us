@@ -145,7 +145,7 @@ type broadcast struct {
 	fifos []StageRunner
 }
 
-func Broadbast(procs ...Processor) StageRunner {
+func Broadcast(procs ...Processor) StageRunner {
 	if len(procs) == 0 {
 		panic("Broadcast: at least one processor must be specified")
 	}
