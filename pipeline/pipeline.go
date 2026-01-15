@@ -58,6 +58,7 @@ func sinkWorker(ctx context.Context, sink Sink, inCh <-chan Payload, errCh chan<
 				maybeEmitError(wrappedErr, errCh)
 				return
 			}
+			payload.MarkAsProcessed()
 		}
 	}
 }
