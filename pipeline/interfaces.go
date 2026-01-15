@@ -63,3 +63,24 @@ type StageRunner interface {
 	// - an error occurs while processing payloads.
 	Run(context.Context, StageParams)
 }
+
+// Source is implemented by types that generate Payload instances which can be
+// used as inputs to a Pipeline instance.
+type Source interface {
+	// Next fetches the next payload from the source. If no more items are
+	// available or an error occurs, calls to Next return false.
+	Next(context.Context) bool
+
+	// Payload returns the next payload to be processed.
+	Payload() Payload
+
+	// Error return the last error observed by the source.
+	Error() error
+}
+
+// Sink is implemented by types that can operate as the tail of a pipeline.
+type Sink interface {
+	// Consume processes a Payload instance that has been emitted out of
+	// a Pipeline instance.
+	Consume(context.Context, Payload) error
+}
