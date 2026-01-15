@@ -140,3 +140,69 @@ stop:
 		<-p.tokenPool
 	}
 }
+
+type broadcast struct {
+	fifos []StageRunner
+}
+
+func Broadbast(procs ...Processor) StageRunner {
+	if len(procs) == 0 {
+		panic("Broadcast: at least one processor must be specified")
+	}
+
+	fifos := make([]StageRunner, len(procs))
+	for i, p := range procs {
+		fifos[i] = FIFO(p)
+	}
+	return &broadcast{fifos: fifos}
+}
+
+func (b *broadcast) Run(ctx context.Context, params StageParams) {
+	var (
+		wg    sync.WaitGroup
+		inChs = make([]chan Payload, len(b.fifos))
+	)
+
+	for i := range len(b.fifos) {
+		wg.Add(1)
+		inChs[i] = make(chan Payload)
+		go func(fifoIndex int) {
+			fifoParams := &workerParams{
+				stage: params.StageIndex(),
+				inCh:  inChs[i],
+				outCh: params.Output(),
+				errCh: params.Error(),
+			}
+			b.fifos[fifoIndex].Run(ctx, fifoParams)
+			wg.Done()
+		}(i)
+	}
+
+done:
+	for {
+		select {
+		case <-ctx.Done():
+			break done
+		case payload, ok := <-params.Input():
+			if !ok {
+				break done
+			}
+			for i := range len(inChs) {
+				var fifoPayload = payload
+				if i != 0 {
+					fifoPayload = payload.Clone()
+				}
+				select {
+				case <-ctx.Done():
+					break done
+				case inChs[i] <- fifoPayload:
+				}
+			}
+		}
+	}
+
+	for _, inCh := range inChs {
+		close(inCh)
+	}
+	wg.Wait()
+}
