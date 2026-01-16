@@ -65,6 +65,21 @@ type Graph struct {
 	pendingInStep   int64
 }
 
+func NewGraph(cfg GraphConfig) (*Graph, error) {
+	if err := cfg.validate(); err != nil {
+		return nil, fmt.Errorf("graph config validation failed: %w", err)
+	}
+
+	g := &Graph{
+		computeFn:    cfg.ComputeFn,
+		queueFactory: cfg.QueueFactory,
+		aggregators:  make(map[string]Aggregator),
+		vertices:     make(map[string]*Vertex),
+	}
+	g.startWorkers(cfg.ComputeWorkers)
+	return g, nil
+}
+
 func (g *Graph) Superstep() int { return g.superstep }
 
 func (g *Graph) AddVertex(id string, initValue any) {
@@ -129,6 +144,27 @@ func (g *Graph) SendMessage(dstID string, msg message.Message) error {
 	}
 
 	return fmt.Errorf("message cannot be sent to %q: %w", dstID, ErrUnknownEdgeSource)
+}
+
+func (g *Graph) Reset() error {
+	g.superstep = 0
+
+	for _, v := range g.vertices {
+		for i := range 2 {
+			if err := v.msgQueue[i].Close(); err != nil {
+				return fmt.Errorf("closing message queue #%d for vertex %v: %w", i, v.ID(), err)
+			}
+		}
+	}
+	g.vertices = make(map[string]*Vertex)
+	g.aggregators = make(map[string]Aggregator)
+	return nil
+}
+
+func (g *Graph) Close() error {
+	close(g.vertexCh)
+	g.wg.Wait()
+	return nil
 }
 
 func (g *Graph) step() (int, error) {
