@@ -24,3 +24,5 @@ type Iterator interface {
 
 	Error() error
 }
+
+type QueueFactory func() Queue
