@@ -3,12 +3,65 @@ package crawler
 import (
 	"context"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/valkyraycho/links-r-us/linkgraph/graph"
 	"github.com/valkyraycho/links-r-us/pipeline"
+	"github.com/valkyraycho/links-r-us/textindexer/index"
 )
 
 var _ pipeline.Source = (*linkSource)(nil)
+
+type Graph interface {
+	UpsertLink(link *graph.Link) error
+	UpsertEdge(edge *graph.Edge) error
+	RemoveStaleEdges(fromID uuid.UUID, updatedBefore time.Time) error
+}
+
+type Indexer interface {
+	Index(doc *index.Document) error
+}
+
+type Crawler struct {
+	p *pipeline.Pipeline
+}
+
+func NewCrawler(cfg Config) *Crawler {
+	return &Crawler{
+		p: assembleCrawlerPipeline(cfg),
+	}
+}
+
+func assembleCrawlerPipeline(cfg Config) *pipeline.Pipeline {
+	return pipeline.New(
+		pipeline.FixedWorkerPool(
+			newLinkFetcher(cfg.URLGetter, cfg.PrivateNetworkDetector),
+			cfg.FetchWorkers,
+		),
+		pipeline.FIFO(newLinkExtractor(cfg.PrivateNetworkDetector)),
+		pipeline.FIFO(newTextExtractor()),
+		pipeline.Broadcast(
+			newGraphUpdater(cfg.Graph),
+			newTextIndexer(cfg.Indexer),
+		),
+	)
+}
+
+func (c *Crawler) Crawl(ctx context.Context, linkIt graph.LinkIterator) (int, error) {
+	sink := new(countingSink)
+	err := c.p.Process(ctx, &linkSource{linkIt: linkIt}, sink)
+	return sink.getCount(), err
+}
+
+type Config struct {
+	PrivateNetworkDetector PrivateNetworkDetector
+	URLGetter              URLGetter
+	Graph                  Graph
+	Indexer                Indexer
+
+	FetchWorkers int
+}
 
 type linkSource struct {
 	linkIt graph.LinkIterator
@@ -31,10 +84,6 @@ func (ls *linkSource) Payload() pipeline.Payload {
 	return p
 }
 
-type nopSink struct{}
-
-func (nopSink) Consume(context.Context, pipeline.Payload) error { return nil }
-
 // URLGetter is implemented by objects that can perform HTTP GET requests.
 type URLGetter interface {
 	Get(url string) (*http.Response, error)
@@ -44,4 +93,19 @@ type URLGetter interface {
 // host resolves to a private network address.
 type PrivateNetworkDetector interface {
 	IsPrivate(host string) (bool, error)
+}
+
+type countingSink struct {
+	count int
+}
+
+func (s *countingSink) Consume(_ context.Context, p pipeline.Payload) error {
+	s.count++
+	return nil
+}
+
+func (s *countingSink) getCount() int {
+	// The broadcast split-stage sends out two payloads for each incoming link
+	// so we need to divide the total count by 2.
+	return s.count / 2
 }

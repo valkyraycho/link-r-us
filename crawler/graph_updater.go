@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/valkyraycho/links-r-us/linkgraph/graph"
 	"github.com/valkyraycho/links-r-us/pipeline"
 )
@@ -13,10 +12,10 @@ type graphUpdater struct {
 	updater Graph
 }
 
-type Graph interface {
-	UpsertLink(link *graph.Link) error
-	UpsertEdge(edge *graph.Edge) error
-	RemoveStaleEdges(fromID uuid.UUID, updatedBefore time.Time) error
+func newGraphUpdater(updater Graph) *graphUpdater {
+	return &graphUpdater{
+		updater: updater,
+	}
 }
 
 func (u *graphUpdater) Process(ctx context.Context, p pipeline.Payload) (pipeline.Payload, error) {
