@@ -8,10 +8,6 @@ import (
 	"github.com/valkyraycho/links-r-us/textindexer/index"
 )
 
-type Indexer interface {
-	Index(doc *index.Document) error
-}
-
 type textIndexer struct {
 	indexer Indexer
 }
