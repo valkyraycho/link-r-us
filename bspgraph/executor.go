@@ -7,6 +7,8 @@ type Executor struct {
 	cb ExecutorCallbacks
 }
 
+type ExecutorFactory func(*Graph, ExecutorCallbacks) *Executor
+
 type ExecutorCallbacks struct {
 	PreStep             func(ctx context.Context, g *Graph) error
 	PostStep            func(ctx context.Context, g *Graph, activeInStep int) error
