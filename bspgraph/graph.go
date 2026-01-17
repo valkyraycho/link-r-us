@@ -82,6 +82,8 @@ func NewGraph(cfg GraphConfig) (*Graph, error) {
 
 func (g *Graph) Superstep() int { return g.superstep }
 
+func (g *Graph) Vertices() map[string]*Vertex { return g.vertices }
+
 func (g *Graph) AddVertex(id string, initValue any) {
 	v := g.vertices[id]
 	if v == nil {

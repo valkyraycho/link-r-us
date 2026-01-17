@@ -17,6 +17,14 @@ func loadFloat64(v *float64) float64 {
 	)
 }
 
+func (a *Float64Accumulator) Get() any {
+	return loadFloat64(&a.curSum)
+}
+
+func (a *Float64Accumulator) Type() string {
+	return "Float64Accumulator"
+}
+
 func (a *Float64Accumulator) Aggregate(v any) {
 	for v64 := v.(float64); ; {
 		oldV := loadFloat64(&a.curSum)
